@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://vision-loutish-craft-studio.base44.app/api/:path*"
+      "source": "/api/apps/:path*",
+      "destination": "https://vision-loutish-craft-studio.base44.app/api/apps/:path*"
     }
   ]
 }
