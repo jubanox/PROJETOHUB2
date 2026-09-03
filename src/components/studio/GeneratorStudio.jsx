@@ -80,7 +80,7 @@ export default function GeneratorStudio() {
         preset_name: 'custom',
         prompt: prompt.trim(),
         expand_prompt: true,
-        quality: 'standard',
+        quality: 'high',
         age_check: true
       };
     } else {
@@ -89,7 +89,7 @@ export default function GeneratorStudio() {
       payload = {
         preset_name: 'custom',
         prompt: prompt.trim(),
-        quality: 'standard',
+        quality: 'high',
         age_check: true
       };
     }
