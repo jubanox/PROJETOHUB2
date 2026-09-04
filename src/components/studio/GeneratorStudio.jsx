@@ -9,7 +9,7 @@ export default function GeneratorStudio() {
   const [prompt, setPrompt] = useState('');
   const [format, setFormat] = useState('1:1');
   const [duration, setDuration] = useState(4);
-  const [provider, setProvider] = useState('hotapi');
+  const [provider, setProvider] = useState('crebots');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

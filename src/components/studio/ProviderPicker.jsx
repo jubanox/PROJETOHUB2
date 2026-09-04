@@ -2,9 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
 const PROVIDERS = [
-  { id: 'hotapi', label: 'HotAPI' },
-  { id: 'fal', label: 'Fal.ai' },
-  { id: 'crebots', label: 'Crebots' },
+  {
+    id: 'crebots',
+    label: 'Crebots',
+  },
+  {
+    id: 'hotapi',
+    label: 'HotAPI',
+  },
+  {
+    id: 'fal',
+    label: 'Fal.ai',
+  },
 ];
 
 export default function ProviderPicker({ provider, setProvider }) {
@@ -39,7 +48,7 @@ export default function ProviderPicker({ provider, setProvider }) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm font-medium text-white transition hover:border-violet-400/50"
+          className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm font-medium text-white transition hover:border-red-400/50"
         >
           <span>{current.label}</span>
 
@@ -61,14 +70,14 @@ export default function ProviderPicker({ provider, setProvider }) {
                   setProvider(p.id);
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm text-white transition hover:bg-violet-500/15"
+                className="flex w-full items-center justify-between px-4 py-3 text-sm text-white transition hover:bg-red-500/15"
               >
                 <span>{p.label}</span>
 
                 {provider === p.id && (
                   <Check
                     size={16}
-                    className="text-violet-400"
+                    className="text-red-400"
                   />
                 )}
               </button>
