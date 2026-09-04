@@ -1,77 +1,86 @@
 import { useState } from 'react';
-import {
-  ImageIcon,
-  Video,
-  History,
-  Heart,
-  Settings,
-  Sparkles,
-  LayoutDashboard,
-  Menu,
-  X
-} from 'lucide-react';
-
 import { base44 } from '@/api/base44Client';
-import PromptForm from '@/components/studio/PromptForm';
+import { Sparkles, ImageIcon, Video, Clock3 } from 'lucide-react';
+import SettingsSelect from '@/components/studio/SettingsSelect';
 import ResultPreview from '@/components/studio/ResultPreview';
+import RecentsGrid from '@/components/studio/RecentsGrid';
 
-export default function GeneratorStudio() {
-  const [kind, setKind] = useState('image');
+export default function GeneratorStudio({ kind = 'image' }) {
+  const isVideo = kind === 'video';
+
   const [prompt, setPrompt] = useState('');
-  const [format, setFormat] = useState('1:1');
+  const [format, setFormat] = useState(isVideo ? '720p' : '1:1');
   const [duration, setDuration] = useState(4);
   const [provider, setProvider] = useState('hotapi');
 
   const [result, setResult] = useState(null);
+  const [recents, setRecents] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [mobileMenu, setMobileMenu] = useState(false);
-
-  const changeKind = (next) => {
-    setKind(next);
-    setFormat(next === 'video' ? '720p' : '1:1');
-    setResult(null);
-    setError('');
-  };
-
   const generate = async (event) => {
     event.preventDefault();
+
+    if (prompt.trim().length < 3) {
+      setError('Descreva o que você deseja criar.');
+      return;
+    }
 
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
-      const name =
-        kind === 'image'
-          ? 'generateAiImage'
-          : 'generateAiVideo';
+      const functionName = isVideo
+        ? 'generateAiVideo'
+        : 'generateAiImage';
 
-      const payload =
-        kind === 'image'
-          ? {
-              prompt,
-              aspectRatio: format,
-              provider
-            }
-          : {
-              prompt,
-              resolution: format,
-              duration,
-              provider
-            };
+      const payload = isVideo
+        ? {
+            prompt: prompt.trim(),
+            resolution: format,
+            duration,
+            provider,
+          }
+        : {
+            prompt: prompt.trim(),
+            aspectRatio: format,
+            provider,
+          };
 
       const response = await base44.functions.invoke(
-        name,
+        functionName,
         payload
       );
 
-      setResult(response.data.url);
+      const url = response?.data?.url;
+
+      if (!url) {
+        throw new Error(
+          response?.data?.error ||
+          'A API não retornou uma URL para a mídia.'
+        );
+      }
+
+      setResult(url);
+
+     setRecents((previous) => [
+  {
+    id: Date.now(),
+    type: kind,
+    url,
+    prompt: prompt.trim(),
+  },
+  ...previous,
+].slice(0, 4));
 
     } catch (err) {
+      console.error('Erro ao gerar mídia:', err);
+
       setError(
         err?.response?.data?.error ||
+        err?.message ||
         'Não foi possível concluir a geração. Tente novamente.'
       );
     } finally {
@@ -80,362 +89,161 @@ export default function GeneratorStudio() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070707] text-white">
+    <div className="space-y-8">
 
-      {/* MOBILE HEADER */}
-      <header className="flex h-16 items-center justify-between border-b border-white/10 bg-[#090909] px-5 lg:hidden">
+      {/* Título */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          {isVideo ? (
+            <Video size={18} className="text-red-500" />
+          ) : (
+            <ImageIcon size={18} className="text-red-500" />
+          )}
 
-        <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-red-600">
-            <Sparkles size={18} />
-          </div>
-
-          <span className="text-lg font-bold tracking-tight">
-            HUB
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-red-500">
+            Criar conteúdo
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setMobileMenu(!mobileMenu)}
-          className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 hover:text-white"
-        >
-          {mobileMenu ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          Transforme sua ideia em {isVideo ? 'vídeo' : 'imagem'}
+        </h1>
 
-      </header>
+        <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+          Descreva o que você deseja criar e deixe a inteligência
+          artificial fazer o resto.
+        </p>
+      </div>
 
-      <div className="flex min-h-screen">
+      {/* Área principal */}
+      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
 
-        {/* SIDEBAR */}
-        <aside
-          className={`
-            fixed inset-y-0 left-0 z-40 w-64
-            border-r border-white/10
-            bg-[#090909]
-            transition-transform duration-300
-            lg:static lg:translate-x-0
-            ${
-              mobileMenu
-                ? 'translate-x-0'
-                : '-translate-x-full'
-            }
-          `}
+        {/* Painel de criação */}
+        <form
+          onSubmit={generate}
+          className="rounded-3xl border border-white/[0.08] bg-[#090909] p-5 shadow-2xl shadow-black/30 sm:p-6"
         >
 
-          {/* LOGO */}
-          <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
+          {/* Prompt */}
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <label className="text-sm font-semibold text-zinc-200">
+                Seu prompt
+              </label>
 
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-red-600 shadow-lg shadow-red-900/30">
-              <Sparkles size={20} />
+              <span className="text-[11px] text-zinc-700">
+                {prompt.length}/1000
+              </span>
             </div>
 
-            <div>
-              <div className="text-lg font-bold tracking-tight">
-                HUB
-              </div>
-
-              <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">
-                AI Studio
-              </div>
-            </div>
-
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              maxLength={1000}
+              rows={9}
+              placeholder={
+                isVideo
+                  ? 'Descreva a cena, movimento, ambiente, iluminação e estilo do vídeo...'
+                  : 'Descreva detalhadamente a imagem que você deseja criar...'
+              }
+              className="w-full resize-none rounded-2xl border border-white/[0.08] bg-black/60 p-4 text-sm leading-6 text-white outline-none transition placeholder:text-zinc-700 focus:border-red-500/40 focus:ring-4 focus:ring-red-500/5"
+            />
           </div>
 
-          {/* NAVIGATION */}
-          <nav className="flex flex-col gap-1 p-4">
+          {/* Configurações */}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
 
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600">
-              Workspace
-            </p>
+            <SettingsSelect
+              label="Modelo"
+              value={provider}
+              onChange={setProvider}
+              options={[
+                { value: 'hotapi', label: 'HotAPI' },
+                { value: 'fal', label: 'Fal.ai' },
+              ]}
+            />
 
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl bg-red-600/10 px-3 py-3 text-sm font-medium text-red-400"
-            >
-              <Sparkles size={18} />
-              Criar
-            </button>
+            <SettingsSelect
+              label={isVideo ? 'Resolução' : 'Formato'}
+              value={format}
+              onChange={setFormat}
+              options={
+                isVideo
+                  ? [
+                      { value: '720p', label: '720p' },
+                      { value: '480p', label: '480p' },
+                    ]
+                  : [
+                      { value: '1:1', label: 'Quadrado · 1:1' },
+                      { value: '16:9', label: 'Paisagem · 16:9' },
+                      { value: '9:16', label: 'Vertical · 9:16' },
+                    ]
+              }
+            />
 
-            <button
-              type="button"
-              onClick={() => changeKind('image')}
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-zinc-500 transition hover:bg-white/5 hover:text-white"
-            >
-              <ImageIcon size={18} />
-              Imagens
-            </button>
-
-            <button
-              type="button"
-              onClick={() => changeKind('video')}
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-zinc-500 transition hover:bg-white/5 hover:text-white"
-            >
-              <Video size={18} />
-              Vídeos
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-zinc-500 transition hover:bg-white/5 hover:text-white"
-            >
-              <History size={18} />
-              Histórico
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-zinc-500 transition hover:bg-white/5 hover:text-white"
-            >
-              <Heart size={18} />
-              Favoritos
-            </button>
-
-            <div className="my-4 h-px bg-white/5" />
-
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600">
-              Sistema
-            </p>
-
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-zinc-500 transition hover:bg-white/5 hover:text-white"
-            >
-              <Settings size={18} />
-              Configurações
-            </button>
-
-          </nav>
-
-          {/* SIDEBAR BOTTOM */}
-          <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 p-4">
-
-            <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
-
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs text-zinc-500">
-                  Créditos
-                </span>
-
-                <span className="text-xs font-semibold text-white">
-                  100
-                </span>
-              </div>
-
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
-                <div className="h-full w-[65%] rounded-full bg-red-600" />
-              </div>
-
-              <button
-                type="button"
-                className="mt-3 w-full rounded-lg border border-white/10 py-2 text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white"
-              >
-                Comprar créditos
-              </button>
-
-            </div>
-
+            {isVideo && (
+              <SettingsSelect
+                label="Duração"
+                value={duration}
+                onChange={setDuration}
+                options={[
+                  { value: 4, label: '4 segundos' },
+                  { value: 6, label: '6 segundos' },
+                  { value: 8, label: '8 segundos' },
+                ]}
+              />
+            )}
           </div>
 
-        </aside>
+          {/* Informações */}
+          <div className="mt-5 flex items-center gap-2 text-[11px] text-zinc-600">
+            <Clock3 size={13} />
 
-        {/* OVERLAY MOBILE */}
-        {mobileMenu && (
+            {isVideo
+              ? `Vídeos usam créditos conforme a duração de ${duration}s.`
+              : 'A geração pode levar alguns instantes.'}
+          </div>
+
+          {/* Botão */}
           <button
-            type="button"
-            aria-label="Fechar menu"
-            onClick={() => setMobileMenu(false)}
-            className="fixed inset-0 z-30 bg-black/70 lg:hidden"
-          />
-        )}
+            type="submit"
+            disabled={loading || prompt.trim().length < 3}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-sm font-semibold text-white shadow-lg shadow-red-950/30 transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <Sparkles size={17} />
 
-        {/* MAIN */}
-        <main className="min-w-0 flex-1">
+            {loading
+              ? 'Criando...'
+              : `Gerar ${isVideo ? 'vídeo' : 'imagem'}`}
+          </button>
 
-          {/* TOP BAR */}
-          <header className="hidden h-20 items-center justify-between border-b border-white/10 bg-[#090909] px-8 lg:flex">
+        </form>
 
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-zinc-600">
-                Workspace
-              </p>
+        {/* Resultado */}
+        <ResultPreview
+          kind={kind}
+          url={result}
+          loading={loading}
+          error={error}
+        />
 
-              <h1 className="mt-1 text-lg font-semibold">
-                Criar conteúdo
-              </h1>
-            </div>
+      </div>
 
-            <div className="flex items-center gap-4">
+      {/* Recentes */}
+      <div>
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-white">
+              Criações recentes
+            </h2>
 
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2">
-
-                <span className="text-xs text-zinc-500">
-                  Créditos
-                </span>
-
-                <span className="ml-2 text-sm font-semibold text-white">
-                  100
-                </span>
-
-              </div>
-
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-zinc-800 text-xs font-bold">
-                U
-              </div>
-
-            </div>
-
-          </header>
-
-          {/* CONTENT */}
-          <div className="mx-auto max-w-[1500px] p-5 sm:p-8">
-
-            {/* TITLE */}
-            <div className="mb-8">
-
-              <div className="flex items-center gap-2 text-sm text-red-500">
-                <Sparkles size={16} />
-
-                <span>
-                  AI Studio
-                </span>
-              </div>
-
-              <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-                Transforme ideias em conteúdo.
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-                Crie imagens e vídeos utilizando inteligência
-                artificial através de uma única interface.
-              </p>
-
-            </div>
-
-            {/* MEDIA SWITCHER */}
-            <div className="mb-6 flex rounded-xl border border-white/10 bg-[#0d0d0d] p-1 w-fit">
-
-              <button
-                type="button"
-                onClick={() => changeKind('image')}
-                className={`
-                  flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition
-                  ${
-                    kind === 'image'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-950/30'
-                      : 'text-zinc-500 hover:text-white'
-                  }
-                `}
-              >
-                <ImageIcon size={16} />
-                Imagem
-              </button>
-
-              <button
-                type="button"
-                onClick={() => changeKind('video')}
-                className={`
-                  flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition
-                  ${
-                    kind === 'video'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-950/30'
-                      : 'text-zinc-500 hover:text-white'
-                  }
-                `}
-              >
-                <Video size={16} />
-                Vídeo
-              </button>
-
-            </div>
-
-            {/* WORKSPACE */}
-            <div className="grid gap-6 xl:grid-cols-[minmax(380px,0.85fr)_minmax(500px,1.15fr)]">
-
-              {/* LEFT */}
-              <div>
-
-                <PromptForm
-                  kind={kind}
-                  prompt={prompt}
-                  setPrompt={setPrompt}
-                  format={format}
-                  setFormat={setFormat}
-                  duration={duration}
-                  setDuration={setDuration}
-                  provider={provider}
-                  setProvider={setProvider}
-                  loading={loading}
-                  onSubmit={generate}
-                />
-
-              </div>
-
-              {/* RIGHT */}
-              <div>
-
-                <ResultPreview
-                  kind={kind}
-                  url={result}
-                  loading={loading}
-                  error={error}
-                />
-
-              </div>
-
-            </div>
-
-            {/* RECENT */}
-            <section className="mt-12">
-
-              <div className="mb-5 flex items-end justify-between">
-
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
-                    Biblioteca
-                  </p>
-
-                  <h3 className="mt-1 text-lg font-semibold">
-                    Criações recentes
-                  </h3>
-                </div>
-
-                <button
-                  type="button"
-                  className="text-xs text-zinc-500 transition hover:text-white"
-                >
-                  Ver tudo →
-                </button>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    className="
-                      aspect-square
-                      overflow-hidden
-                      rounded-2xl
-                      border border-white/5
-                      bg-[#0d0d0d]
-                    "
-                  >
-                    <div className="flex h-full items-center justify-center text-zinc-800">
-                      <LayoutDashboard size={28} />
-                    </div>
-                  </div>
-                ))}
-
-              </div>
-
-            </section>
-
+            <p className="mt-1 text-xs text-zinc-600">
+              Seus últimos conteúdos gerados nesta sessão.
+            </p>
           </div>
+        </div>
 
-        </main>
-
+        <RecentsGrid items={recents} />
       </div>
 
     </div>

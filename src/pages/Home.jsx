@@ -1,11 +1,39 @@
-import StudioHeader from '@/components/studio/StudioHeader';
+import { useState } from 'react';
+import StudioTopBar from '@/components/studio/StudioTopBar';
+import StudioSidebar from '@/components/studio/StudioSidebar';
 import GeneratorStudio from '@/components/studio/GeneratorStudio';
 
 export default function Home() {
+  const [kind, setKind] = useState('image');
+
   return (
-    <main className="min-h-screen overflow-hidden bg-[#07090f] text-white">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(124,58,237,0.16),transparent_30%),radial-gradient(circle_at_85%_80%,rgba(59,130,246,0.1),transparent_32%)]" />
-      <div className="relative mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-9 lg:px-8"><StudioHeader /><div className="mb-8 max-w-2xl"><p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-red-400">Imagine. Descreva. Crie.</p><h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">Transforme palavras em <span className="text-slate-500">imagens e vídeos.</span></h1><p className="mt-4 max-w-xl text-sm leading-6 text-slate-400 sm:text-base">Dê forma às suas ideias com prompts detalhados e geração por inteligência artificial.</p></div><GeneratorStudio /></div>
-    </main>
+    <div className="min-h-screen bg-[#050505] text-white">
+
+      {/* Barra superior */}
+      <StudioTopBar />
+
+      {/* Layout */}
+      <div className="flex min-h-[calc(100vh-64px)]">
+
+        {/* Sidebar */}
+        <StudioSidebar
+          kind={kind}
+          setKind={setKind}
+        />
+
+        {/* Conteúdo */}
+        <main className="min-w-0 flex-1 overflow-x-hidden">
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10">
+
+            <GeneratorStudio
+              kind={kind}
+              setKind={setKind}
+            />
+
+          </div>
+        </main>
+
+      </div>
+    </div>
   );
 }
